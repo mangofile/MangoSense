@@ -1,7 +1,5 @@
 // MangoSense.Worker.js - V4.0 AI 计算线程
-import { pipeline, env } from 'cdn.jsdelivr.net';
-
-// 配置 2026 模型缓存路径
+import { pipeline, env } from 'https://cdn.jsdelivr.net''ht// 配置 2026 模型缓存路径
 env.allowLocalModels = false;
 
 let pipe = null;
@@ -20,3 +18,4 @@ self.onmessage = async (e) => {
         self.postMessage({ type: 'VECTOR', vector, originalText: text });
     }
 };
+
