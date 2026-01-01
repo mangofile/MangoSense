@@ -1,0 +1,279 @@
+/* 1. 颜色变量定义 - 2026 标准架构 */
+:root {
+    /* 基础背景与文字 */
+    --bg-main: #f8f9fa;
+    --bg-card: #ffffff;
+    --bg-input: #ffffff;
+    --bg-secondary: #f9f9f9;
+    --bg-modal: #ffffff;
+    
+    --text-main: #333333;
+    --text-header: #000000;
+    --text-muted: #888888;
+    --text-on-dark: #ffffff;
+    
+    /* 品牌色与交互 */
+    --primary-black: #1a1a1a;
+    --accent-blue: #2d5cf7;
+    --accent-blue-light: #f1f4ff;
+    --accent-blue-hover: #e8edff;
+    --danger-red: #ff4d4f;
+    
+    /* 边框与阴影 */
+    --border-color: #e0e0e0;
+    --border-light: #f0f0f0;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.02);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* 深色模式预览 - V3 预留 */
+body.dark-theme {
+    --bg-main: #121212;
+    --bg-card: #1e1e1e;
+    --bg-input: #252525;
+    --bg-secondary: #2a2a2a;
+    --bg-modal: #1e1e1e;
+    --text-main: #e0e0e0;
+    --text-header: #ffffff;
+    --text-muted: #aaaaaa;
+    --border-color: #333333;
+    --border-light: #2a2a2a;
+    --accent-blue-light: #1a2238;
+}
+
+/* 2. 基础复位 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: -apple-system, "Helvetica Neue", sans-serif; 
+    background: var(--bg-main); 
+    color: var(--text-main); 
+    overflow-y: scroll; 
+    scrollbar-gutter: stable; /* 2026版：防止抖动 */
+}
+
+/* 3. 布局组件 */
+.top-bar {
+    position: fixed; top: 0; width: 100%; height: 60px;
+    background: var(--primary-black); color: var(--text-on-dark);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 30px; z-index: 1000;
+}
+
+.logo-area { display: flex; align-items: baseline; gap: 8px; }
+.logo { font-weight: bold; letter-spacing: 1px; font-size: 18px; }
+.version-tag { font-size: 12px; color: var(--text-muted); }
+
+.header-controls { display: flex; gap: 12px; align-items: center; }
+.theme-btn { background: none; border: none; cursor: pointer; font-size: 18px; }
+
+.settings-btn { 
+    background: #333; color: white; padding: 6px 15px; border-radius: 4px; 
+    cursor: pointer; font-size: 14px; transition: 0.3s; border: none;
+}
+.settings-btn:hover { background: #444; }
+
+.container { max-width: 800px; margin: 80px auto 40px; padding: 0 20px; }
+
+/* 4. 搜索框区域 */
+.search-area { margin-bottom: 20px; }
+.search-wrapper { position: relative; width: 100%; }
+
+#searchInput {
+    width: 100%;
+    padding: 15px 40px 15px 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    font-size: 16px;
+    outline: none;
+    background: var(--bg-input);
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+}
+
+.clear-btn {
+    position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+    font-size: 22px; color: var(--text-muted); cursor: pointer;
+    display: none; user-select: none;
+}
+.clear-btn:hover { color: var(--text-main); }
+
+/* 5. 话术展示卡片 */
+.quick-reply-area { margin-bottom: 25px; }
+.section-title { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.quick-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-item { 
+    background: var(--bg-card); border: 1px solid var(--border-color); padding: 6px 14px;
+    border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.2s;
+    color: var(--text-main);
+}
+.tag-item:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+.qa-card { background: var(--bg-card); border-radius: 10px; padding: 20px; margin-bottom: 15px; box-shadow: var(--shadow-md); }
+.question-text { font-weight: 600; color: var(--text-header); margin-bottom: 12px; display: block; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; }
+
+.reply-option { 
+    background: var(--accent-blue-light); padding: 10px 15px; margin-bottom: 6px; border-radius: 6px;
+    font-size: 14px; cursor: pointer; color: var(--text-main); transition: 0.2s;
+}
+.reply-option:hover { background: var(--accent-blue-hover); color: var(--accent-blue); }
+
+/* 6. 弹窗系统 */
+.modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index:2000; justify-content:center; align-items:center; }
+.modal { background: var(--bg-modal); width: 90%; max-width: 600px; border-radius: 12px; height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+.modal-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+
+.modal-tabs { display: flex; background: var(--bg-secondary); flex-shrink: 0; }
+.modal-tabs button { flex: 1; padding: 12px; border: none; cursor: pointer; background: none; color: var(--text-muted); }
+.modal-tabs button.active { background: var(--bg-modal); color: var(--text-header); font-weight: bold; border-top: 2px solid var(--primary-black); }
+
+.modal-body { padding: 20px; overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+.panel { display: none; height: 100%; flex-direction: column; }
+.panel.active { display: flex; }
+
+.add-form { background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px; flex-shrink: 0; border: 1px solid var(--border-color); }
+.add-form input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-input); color: var(--text-main); }
+
+/* 7. 表单组件 */
+.reply-input-item, .image-input-item { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+.img-cat-val { flex: 1; }
+.img-file-val { flex: 2; padding: 6px !important; font-size: 12px; background: var(--bg-input);border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 10px; }
+
+.plus-btn { width: 40px; height: 36px; cursor: pointer; border-radius: 4px; border: 1px solid #BBB; background: #eee; margin-bottom: 10px; }
+.save-btn { width: 100%; background: var(--primary-black); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; margin-top: 5px; transition: background-color 0.2s ease, transform 0.1s ease;}
+.save-btn:hover {
+    background-color: #333333; /* 悬停时稍微变浅一点 */
+    cursor: pointer;
+}
+
+.save-btn:active {
+    transform: scale(0.98); /* 点击时微小的按压反馈 */
+    background-color: #000000;
+}
+.close-btn { border: none; background: none; font-size: 24px; cursor: pointer; color: var(--text-muted); transition: color 0.2s ease;}
+.close-btn:hover {
+    color: var(--danger-red);
+}
+
+/* 8. 管理列表 */
+.manage-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+.manage-list::-webkit-scrollbar { width: 6px; }
+.manage-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+.manage-item { padding: 12px 10px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.manage-item div { display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%; }
+.del-btn { color: var(--danger-red); cursor: pointer; font-weight: 500; }
+
+/* 9. 媒体库 */
+.image-library { margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px; }
+.image-group { margin-bottom: 10px; }
+.group-label { font-size: 12px; color: var(--text-muted); font-weight: bold; margin-bottom: 5px; display: block; }
+.img-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-grid img { width: 60px; height: 60px; object-fit: cover; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: 0.2s; }
+.img-grid img:hover { transform: scale(1.1); border-color: var(--accent-blue); }
+
+/* 10. 底部动作条 */
+.db-actions { display: flex; gap: 10px; padding: 15px 20px; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--bg-secondary); transition: background-color 0.2s ease, opacity 0.2s ease;}
+.action-btn:hover {
+    background-color: #555555; /* 悬停时变亮 */
+    opacity: 0.9;
+}
+
+.action-btn:active {
+    background-color: #222222; /* 点击时变深 */
+}
+.action-btn { background: #444; color: white; border: none; padding: 6px 15px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+
+@media (max-width: 600px) { .img-grid img { width: 50px; height: 50px; } }
+
+/* 主题图标切换逻辑 */
+.theme-btn .moon-icon { display: none; color: var(--text-muted); }
+.theme-btn .sun-icon { display: block; color: #ffab00; }
+
+/* 当处于深色模式时，反转显示 */
+body.dark-theme .theme-btn .sun-icon { display: none; }
+body.dark-theme .theme-btn .moon-icon { display: block; color: #f1c40f; }
+
+/* 管理列表中的图片 SVG 图标样式 */
+.img-msg-icon {
+    margin-right: 8px;
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+.hidden-input {
+    display: none !important;
+}
+/* --- V3.1.2 管理端搜索框 - 极简图标版 --- */
+
+.manage-search-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+/* 放大镜 SVG 定位 */
+.search-icon-svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none; /* 防止遮挡输入框点击 */
+}
+
+#manageSearchInput {
+    width: 100%;
+    padding: 8px 12px 8px 32px; /* 左侧留出 32px 给放大镜 */
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px; /* 更加方正的极简风格 */
+    background: var(--bg-input);
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+    box-shadow: none !important; /* 强制去掉高亮阴影 */
+}
+
+/* 仅在聚焦时微调边框颜色，不启用蓝色高亮 */
+#manageSearchInput:focus {
+    border-color: #999; /* 稍微加深边框，不使用蓝色 */
+}
+
+/* 深色模式适配 */
+body.dark-theme #manageSearchInput {
+    background: #1e1e1e;
+    border-color: #333;
+}
+
+body.dark-theme #manageSearchInput:focus {
+    border-color: #555;
+}
+
+body.dark-theme .search-icon-svg {
+    color: #666;
+}
+button[style*="danger-red"]:hover {
+    background-color: #ff1f1f !important; /* 悬停时更鲜红 */
+    box-shadow: 0 2px 8px rgba(255, 77, 79, 0.2);
+}
+.delete-btn{
+    background-color: #9b799b;
+}
+/* Logo 样式 */
+.logo-area {
+    display: flex;
+    align-items: center; /* 确保图标和文字垂直居中对齐 */
+    gap: 10px; /* 图标与文字之间的间距 */
+}
+
+.main-logo {
+    height: 28px; /* 建议高度在 24px-30px 之间，适配 60px 高度的 top-bar */
+    width: auto;
+    object-fit: contain;
+    /* 如果是纯色 Logo，可以在深色模式下添加滤镜反转颜色 */
+    transition: filter 0.3s ease;
+}
+
+/* 深色模式适配：如果 Logo 是黑色的，在深色模式下变白 */
+body.dark-theme .main-logo {
+    filter: brightness(0) invert(1);
+}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芒果智能客服话术助手</title>
+    <link rel="stylesheet" href="ass/css/style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="light-theme"> <!-- 预留主题类名 -->
+    <header class="top-bar">
+        <div class="logo-area">
+            <img src="ass/images/web_Logo.png" alt="Logo" class="main-logo"> 
+            <span class="logo">MANGO SENSE AI</span>
+            <span class="version-tag">v4.0</span>
+        </div>
+        <div class="header-controls">
+            <!-- 预留深色模式切换按钮 -->
+           <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="切换主题">
+           <!-- 太阳图标 (浅色模式显示) -->
+           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+           <!-- 月亮图标 (深色模式显示) -->
+           <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+           </button>
+            <button class="settings-btn" onclick="toggleModal(true)">配置中心</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 常用语区域 -->
+        <section class="quick-reply-area">
+            <div class="section-title">常用快捷语</div>
+            <div id="quickReplyList" class="quick-tags">
+                <!-- 由JS渲染 -->
+            </div>
+        </section>
+
+        <!-- 搜索与话术展示 -->
+        <section class="search-area">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="搜索问题关键词..." oninput="renderMainList()">
+                <span id="clearSearch" class="clear-btn" onclick="clearSearchInput()">&times;</span>
+            </div>
+        </section>
+
+        <div id="qaDisplay" class="qa-container">
+            <!-- 渲染问题及对应的多条回复 -->
+        </div>
+    </main>
+
+    <!-- 设置弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>话术配置</h2>
+                <button class="close-btn" onclick="toggleModal(false)">✕</button>
+            </div>
+            
+            <div class="modal-tabs">
+                <button onclick="switchTab('qa')" id="tab-qa" class="active">编辑话术</button>
+                <button onclick="switchTab('quick')" id="tab-quick">编辑常用语</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- 话术编辑面板 (Q&A) -->
+                <div id="panel-qa" class="panel active">
+                    <div class="add-form">
+                        <div class="input-group">
+                            <input type="text" id="newQuestion" placeholder="输入客户问题...">
+                        </div>
+
+                        <div class="input-group">
+                            <div id="replyInputs">
+                                <div class="reply-input-item">
+                                    <input type="text" class="reply-val" placeholder="回复话术 1">
+                                    <button onclick="addReplyInput()" class="plus-btn">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <div id="imageInputs">
+                                <div class="image-input-item">
+                                    <input type="text" class="img-cat-val" placeholder="分类(如:广州)">
+                                    <input type="file" class="img-file-val" accept="image/*">
+                                    <button onclick="addImageInput()" class="plus-btn">+</button>
+                                </div>
+                            </div>
+                            <div id="imgPreviewArea" class="preview-info"></div>
+                        </div>
+
+                        <button onclick="saveNewQA()" class="save-btn">添加库</button>
+                    </div>
+                    <!-- 管理列表搜索增强 - 极简图标版 -->
+                    <div class="manage-search-wrapper">
+                        <svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle>
+                               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                               </svg>
+                        <input type="text" id="manageSearchInput" placeholder="搜索已存话术..." oninput="renderManageLists()">
+                    </div>
+
+                    <div id="manageQaList" class="manage-list"></div>
+                </div>
+
+                <!-- 常用语编辑面板 -->
+                <div id="panel-quick" class="panel">
+                    <div class="add-form">
+                        <div class="input-group">
+                            <input type="text" id="newQuickText" placeholder="输入常用短语（如：好的）">
+                            <button onclick="addQuickReply()" class="save-btn">添加常用语</button>
+                        </div>
+                    </div>
+                    <div id="manageQuickList" class="manage-list"></div>
+                </div>
+            </div>
+
+            <!-- 数据管理底部栏 -->
+            <div class="db-actions">
+                <button onclick="clearAllData()" class="action-btn delete-btn">清空全库</button>
+                <button onclick="exportData()" class="action-btn">导出备份</button>
+                <button onclick="document.getElementById('importFile').click()" class="action-btn">导入数据</button>
+                <input type="file" id="importFile" class="hidden-input" onchange="importData(event)" accept=".json">
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="ass/js/MangoSense.js"></script>
+</body>
+</html>
