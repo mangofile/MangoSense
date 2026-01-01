@@ -23,8 +23,9 @@
     {
       "name": "开启配置中心",
       "url": "./index.html?action=settings",
-      "icons": [{ "src": "ass/images/web_Logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "ass/App_Logo_192.png", "sizes": "192x192" }]
     }
   ]
 }
+
 
