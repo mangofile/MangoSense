@@ -1,7 +1,8 @@
 /**
- * PROTOCOL_RECOVERY_KEY::MECIS_V26_CORE_PRO
- * STATUS: INTEGRATED_STABLE
- * VERSION: V4.0-AI-PREVIEW (Project: Mango Sense)
+ * PROTOCOL_RECOVERY_KEY::MECIS_V4.0_STABLE
+ * STATUS: INTEGRATED_FINAL_VERSION
+ * VERSION: V4.0-AI-READY (Project: Mango Sense)
+ * 2026-PRODUCTION-READY
  */
 
 (function() {
@@ -13,7 +14,7 @@
 
     const getSafeDBName = () => {
         const safeName = getFileName().replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        return `MangoDB_V4_${safeName}`; // 升级为 V4 物理库
+        return `MangoDB_V4_${safeName}`; 
     };
 
     const DB_NAME = getSafeDBName(); 
@@ -67,22 +68,28 @@
         }
     };
 
-    // --- 3. AI 核心：Web Worker 交互 (V4.0 新增) ---
+    // --- 3. AI 核心：Web Worker 交互 (V4.0 关键修复) ---
     function initAiWorker() {
-        // 创建独立线程，防止 AI 计算时 UI 卡顿
-        aiWorker = new Worker('ass/js/MangoSense.Worker.js', { type: 'module' });
-        aiWorker.postMessage({ type: 'INIT' });
-        aiWorker.onmessage = (e) => {
-            if (e.data.type === 'READY') {
-                isAiReady = true;
-                const tag = document.querySelector('.version-tag');
-                if(tag) tag.innerHTML = 'v4.0-AI-READY';
-                console.log("MECIS AI Core: 语义引擎已就绪");
-            }
-        };
+        // 动态路径适配 GitHub Pages
+        const workerUrl = new URL('./MangoSense.Worker.js', import.meta.url).href;
+        try {
+            aiWorker = new Worker(workerUrl, { type: 'module' });
+            aiWorker.postMessage({ type: 'INIT' });
+            aiWorker.onmessage = (e) => {
+                if (e.data.type === 'READY') {
+                    isAiReady = true;
+                    const tag = document.querySelector('.version-tag');
+                    if(tag) tag.innerHTML = 'v4.0-AI-READY';
+                    console.log("MECIS AI Core: 语义引擎已就绪");
+                }
+            };
+        } catch (error) {
+            console.error("AI Worker 启动失败:", error);
+        }
     }
 
     async function getVector(text) {
+        if (!isAiReady) return null;
         return new Promise(res => {
             const handler = (e) => {
                 if (e.data.type === 'VECTOR' && e.data.originalText === text) {
@@ -96,18 +103,18 @@
     }
 
     function cosineSimilarity(v1, v2) {
+        if (!v1 || !v2) return 0;
         const dot = v1.reduce((s, c, i) => s + c * v2[i], 0);
         const nA = Math.sqrt(v1.reduce((s, c) => s + c * c, 0));
         const nB = Math.sqrt(v2.reduce((s, c) => s + c * c, 0));
-        return dot / (nA * nB);
+        return (nA === 0 || nB === 0) ? 0 : dot / (nA * nB);
     }
 
     // --- 4. 核心启动逻辑 ---
     window.onload = async () => {
         await initDB();
-        initAiWorker(); // 启动 AI 引擎
+        initAiWorker(); 
         
-        // 迁移旧版 LocalStorage 数据 (继承 V3.5)
         const currentFile = getFileName();
         const oldQA = localStorage.getItem(`QA_DATA_${currentFile}`);
         const oldQuick = localStorage.getItem(`QUICK_DATA_${currentFile}`);
@@ -130,7 +137,6 @@
         await refreshMemory();
         renderAll();
 
-        // 注册 PWA (2026 标准)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').catch(console.warn);
         }
@@ -158,27 +164,23 @@
 
         let displayData = [];
         if (!term) {
-            // 无搜索时按点击量排序 (继承 V3.5)
             displayData = [...qaData].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10);
             if (displayData.length === 0 && qaData.length > 0) displayData = [...qaData].reverse().slice(0, 10);
         } else {
-            // 1. 传统模糊匹配引擎 (继承 V3.5)
             const fuzzyResults = qaData.filter(item => 
                 fuzzyMatch(item.question, term) || item.replies.some(r => fuzzyMatch(r, term))
             );
 
-            // 2. AI 语义引擎 (V4.0 增强)
             if (isAiReady) {
                 const queryVec = await getVector(term);
                 const semanticResults = qaData
-                    .filter(item => item.vector) // 仅对比已向量化的数据
+                    .filter(item => item.vector) 
                     .map(item => ({
                         ...item,
                         score: cosineSimilarity(queryVec, item.vector)
                     }))
-                    .filter(item => item.score > 0.65); // 语义置信度阈值
+                    .filter(item => item.score > 0.65);
 
-                // 合并去重并按得分排序
                 const combined = [...fuzzyResults, ...semanticResults];
                 displayData = Array.from(new Map(combined.map(i => [i.id, i])).values());
                 displayData.sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -209,11 +211,9 @@
 
         showToast("AI 语义分析中...");
         
-        // 核心：生成语义特征向量 (V4.0)
         let vector = null;
         if (isAiReady) vector = await getVector(question);
 
-        // 处理图片 (继承 V3.5)
         let images = [];
         for (let i = 0; i < imgFiles.length; i++) {
             const file = imgFiles[i].files[0];
@@ -229,14 +229,13 @@
         await refreshMemory();
         showToast("已存入 AI 库");
         
-        // 重置表单
         document.getElementById('newQuestion').value = '';
         document.getElementById('replyInputs').innerHTML = `<div class="reply-input-item"><input type="text" class="reply-val" placeholder="回复话术 1"><button onclick="addReplyInput()" class="plus-btn">+</button></div>`;
         document.getElementById('imageInputs').innerHTML = `<div class="image-input-item"><input type="text" class="img-cat-val" placeholder="分类..."><input type="file" class="img-file-val" accept="image/*"><button onclick="addImageInput()" class="plus-btn">+</button></div>`;
         renderAll(); renderManageLists();
     };
 
-    // --- 6. 常用功能补全 (完全保留 V3.5 逻辑) ---
+    // --- 6. 核心功能补全 ---
     window.fuzzyMatch = function(str, keyword) {
         if (!str || !keyword) return false;
         str = str.toLowerCase(); keyword = keyword.toLowerCase();
@@ -287,7 +286,7 @@
                 </div>`).join('') + `</div>`;
     }
 
-    // --- 7. 管理界面逻辑 (完全保留 V3.5) ---
+    // --- 7. 管理界面逻辑 ---
     window.renderManageLists = () => {
         const mTerm = document.getElementById('manageSearchInput')?.value.trim().toLowerCase() || "";
         const qaContainer = document.getElementById('manageQaList');
@@ -314,7 +313,6 @@
         }
     };
 
-    // 其他 V3.5 基础函数补全
     window.toggleTheme = () => {
         const n = document.body.className === 'light-theme' ? 'dark-theme' : 'light-theme';
         document.body.className = n; localStorage.setItem(DB_KEY_THEME, n);
@@ -347,6 +345,21 @@
         if(confirm("确定清空全库吗？")) { await IO.clear(STORE_QA); await IO.clear(STORE_QUICK); location.reload(); }
     };
     window.deleteQA = async (id) => { await IO.delete(STORE_QA, id); await refreshMemory(); renderManageLists(); renderAll(); };
+    window.deleteQuick = async (index) => {
+        const list = await IO.getAll(STORE_QUICK);
+        // 注意：由于是按反序渲染，此处删除逻辑需小心
+        const target = list[index];
+        if(target) {
+            const tx = db.transaction(STORE_QUICK, "readwrite");
+            const store = tx.objectStore(STORE_QUICK);
+            // 获取真正的 key 
+            const keys = await new Promise(res => {
+                const r = store.getAllKeys(); r.onsuccess = () => res(r.result);
+            });
+            await IO.delete(STORE_QUICK, keys[index]);
+            await refreshMemory(); renderManageLists(); renderAll();
+        }
+    };
     window.exportData = async () => {
         const obj = { qaData, quickReplies };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
@@ -372,8 +385,9 @@
         if (c) c.innerHTML = quickReplies.map(t => `<div class="tag-item" onclick="copyText('${t}')">${t}</div>`).join('');
         renderMainList();
     };
+    window.clearSearchInput = () => {
+        const input = document.getElementById('searchInput');
+        if(input) { input.value = ''; renderMainList(); }
+    };
 
-})(); // 闭包结束
-
-
-
+})();
