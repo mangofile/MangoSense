@@ -1,31 +1,32 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+<!-- index.html 核心头部修正 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>芒果智能客服话术助手</title>
+    <!-- 1. 确保清单路径正确 -->
+    <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="ass/images/web_Logo.png">
     <link rel="stylesheet" href="ass/css/style.css">
-    <link rel="manifest" href="manifest.json">
+    <!-- 2. 引导脚本：强制激活统一的 sw.js -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then(reg => {
+                        // 2026 隔离环境检查：若未就绪则强制刷新
+                        if (!window.crossOriginIsolated || !navigator.serviceWorker.controller) {
+                            reg.update().then(() => {
+                                if (reg.active) window.location.reload();
+                            });
+                        }
+                    });
+            });
+        }
+    </script>
 </head>
-<body class="light-theme"> <!-- 预留主题类名 -->
-    <header class="top-bar">
-        <div class="logo-area">
-            <img src="ass/images/web_Logo.png" alt="Logo" class="main-logo"> 
-            <span class="logo">MANGO SENSE AI</span>
-            <span class="version-tag">v4.0</span>
-        </div>
-        <div class="header-controls">
-            <!-- 预留深色模式切换按钮 -->
-           <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="切换主题">
-           <!-- 太阳图标 (浅色模式显示) -->
-           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-           <!-- 月亮图标 (深色模式显示) -->
-           <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-           </button>
-            <button class="settings-btn" onclick="toggleModal(true)">配置中心</button>
-        </div>
-    </header>
+
 
     <main class="container">
         <!-- 常用语区域 -->
@@ -128,6 +129,7 @@
     <script type="module" src="./ass/js/MangoSense.js"></script>
 </body>
 </html>
+
 
 
 
