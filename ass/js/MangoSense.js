@@ -227,7 +227,7 @@
 
         await window.IO.put(window.STORE_QA, { id: Date.now(), question, replies, images, clicks: 0, vector });
         await window.refreshMemory();
-        window.showToast("已存入 AI 库");
+        window.showToast("我记住了");
         
         // 重置表单
         document.getElementById('newQuestion').value = '';
@@ -423,4 +423,5 @@
     };
 
 })(); // 闭包结束
+
 
