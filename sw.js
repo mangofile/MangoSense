@@ -1,12 +1,10 @@
-const CACHE_NAME = 'mango-sense-v4-core';
-// 2026 核心缓存列表
+const CACHE_NAME = 'mango-sense-v4';
 const ASSETS = [
     './',
     'index.html',
-    './ass/css/style.css',
-    './ass/js/MangoSense.js',
-    './ass/images/web_Logo.png',
-    'cdn.jsdelivr.net'
+    'ass/css/style.css',
+    'ass/js/MangoSense.js',
+    'ass/js/MangoSense.Worker.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -16,7 +14,7 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-    // 策略：缓存优先，模型文件由 Transformers.js 内部 Cache API 管理
+    // 允许外部 CDN 资源正常通过，不强制在 ASSETS 列表里下载
     e.respondWith(
         caches.match(e.request).then(res => res || fetch(e.request))
     );
