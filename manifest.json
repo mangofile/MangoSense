@@ -9,12 +9,12 @@
   "theme_color": "#1a1a1a",
   "icons": [
     {
-      "src": "ass/images/web_Logo.png",
+      "src": "ass/images/App_Logo_192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "ass/images/web_Logo.png",
+      "src": "ass/images/App_Logo_512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
@@ -27,3 +27,4 @@
     }
   ]
 }
+
