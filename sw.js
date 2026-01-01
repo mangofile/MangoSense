@@ -1,4 +1,5 @@
-const CACHE_NAME = 'mango-sense-v4';
+// sw.js - V4.0 兼容性版本
+const CACHE_NAME = 'mango-v4-cache';
 const ASSETS = [
     './',
     'index.html',
@@ -13,8 +14,11 @@ self.addEventListener('install', (e) => {
     );
 });
 
+// 关键修正：不再拦截外部 CDN 的 fetch，让浏览器直接处理
 self.addEventListener('fetch', (e) => {
-    // 允许外部 CDN 资源正常通过，不强制在 ASSETS 列表里下载
+    if (e.request.url.includes('jsdelivr.net')) {
+        return; // 直接跳过，不干预 AI 模型加载
+    }
     e.respondWith(
         caches.match(e.request).then(res => res || fetch(e.request))
     );
