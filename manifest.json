@@ -11,22 +11,25 @@
     {
       "src": "ass/images/App_Logo_192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "ass/images/App_Logo_512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
     {
       "name": "开启配置中心",
       "url": "./index.html?action=settings",
-      "icons": [{ "src": "ass/images/web_Logo.png", "sizes": "300x300" }]
+      "icons": [{ "src": "ass/images/web_Logo.png", "sizes": "300x300","purpose": "any" }]
     }
   ]
 }
+
 
 
 
