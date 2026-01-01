@@ -372,6 +372,11 @@
         if (c) c.innerHTML = quickReplies.map(t => `<div class="tag-item" onclick="copyText('${t}')">${t}</div>`).join('');
         renderMainList();
     };
-
+/*
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(console.warn);
+}
+*/
 })(); // 闭包结束
+
 
