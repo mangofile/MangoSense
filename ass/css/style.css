@@ -293,7 +293,8 @@ body.dark-theme .main-logo {
 }
 
 #pwaInstallBtn:hover {
-    background-color: var(--accent-blue);
+    background-color: #FF0000;
     color: white !important;
     transform: scale(1.05);
 }
+
