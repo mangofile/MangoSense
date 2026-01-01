@@ -198,7 +198,7 @@
                 </span>
                 <div class="replies-box">${item.replies.map(r => `<div class="reply-option" onclick="window.copyText('${r}', ${item.id})">${r}</div>`).join('')}</div>
                 ${item.images && item.images.length > 0 ? window.renderImageSection(item.images) : ''}
-            </div>`).join('') : `<div style="text-align:center; padding:40px; color:#666;">暂无匹配话术，请在配置中心添加数据</div>`;
+            </div>`).join('') : `<div style="text-align:center; padding:40px; color:#666;">暂无匹配数据，请在配置中心添加数据</div>`;
     };
 
     window.saveNewQA = async function() {
@@ -423,3 +423,4 @@
     };
 
 })(); // 闭包结束
+
