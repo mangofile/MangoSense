@@ -1,55 +1,44 @@
 /**
  * PROJECT: MANGO SENSE AI V4.0
  * CORE: SEMANTIC_WORKER_CORE_2026
- * STATUS: PRODUCTION_READY
+ * STATUS: FIXED_VERSION
  */
 
-// 1. 从 ESM 加载 Transformers.js
+// 从 ESM 直接加载 Transformers.js
 import { pipeline, env } from 'esm.sh';
 
-/**
- * 2. 核心环境配置 (针对 GitHub Pages 部署优化)
- */
+// 2026 部署配置
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-// 强制重定向 Wasm 路径到官方 CDN
+// 强制指向远程 Wasm 资源，解决部署端路径 404 问题
 env.backends.onnx.wasm.wasmPaths = 'cdn.jsdelivr.net';
 
 let pipe = null;
 
-/**
- * 3. AI 线程消息监听器
- */
+// Worker 监听逻辑（禁止使用 window/document）
 self.onmessage = async (e) => {
     const { type, text } = e.data;
 
-    // --- 逻辑 A: 引擎初始化 ---
     if (type === 'INIT') {
         try {
-            console.log("MECIS AI: 正在初始化多语言语义模型...");
-            // 加载模型
+            console.log("MECIS AI Worker: 正在初始化语义引擎...");
             pipe = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
-            console.log("MECIS AI: 模型载入成功");
             self.postMessage({ type: 'READY' });
         } catch (err) {
-            console.error("MECIS AI: 初始化失败:", err);
-            self.postMessage({ type: 'ERROR', message: err.message });
+            console.error("MECIS AI Worker: 初始化失败", err);
         }
     }
 
-    // --- 逻辑 B: 文本向量化 (Embedding) ---
-    if (type === 'EMBED') {
-        if (!pipe) return;
+    if (type === 'EMBED' && pipe) {
         try {
             const output = await pipe(text, { pooling: 'mean', normalize: true });
-            const vector = Array.from(output.data);
             self.postMessage({ 
                 type: 'VECTOR', 
-                vector: vector, 
+                vector: Array.from(output.data), 
                 originalText: text 
             });
         } catch (err) {
-            console.error("MECIS AI: 向量化处理异常:", err);
+            console.error("MECIS AI Worker: 处理异常", err);
         }
     }
 };
