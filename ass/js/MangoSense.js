@@ -70,7 +70,7 @@
     // --- 3. AI 核心：Web Worker 交互 (V4.0 新增) ---
     function initAiWorker() {
         // 创建独立线程，防止 AI 计算时 UI 卡顿
-        aiWorker = new Worker('./ass/js/MangoSense.Worker.js', { type: 'module' });
+        aiWorker = new Worker('ass/js/MangoSense.Worker.js', { type: 'module' });
         aiWorker.postMessage({ type: 'INIT' });
         aiWorker.onmessage = (e) => {
             if (e.data.type === 'READY') {
@@ -374,3 +374,4 @@
     };
 
 })(); // 闭包结束
+
