@@ -70,7 +70,6 @@
 
     // --- 3. AI 核心：Web Worker 交互 (V4.0 关键修复) ---
     function initAiWorker() {
-        // 动态路径适配 GitHub Pages
         const workerUrl = new URL('./MangoSense.Worker.js', import.meta.url).href;
         try {
             aiWorker = new Worker(workerUrl, { type: 'module' });
@@ -110,12 +109,19 @@
         return (nA === 0 || nB === 0) ? 0 : dot / (nA * nB);
     }
 
-    // --- 4. 核心启动逻辑 ---
+    // --- 4. 核心启动逻辑 (V4.0 部署补丁版) ---
     window.onload = async () => {
+        // A. 优先数据库初始化
         await initDB();
-        initAiWorker(); 
+
+        // B. 延迟 1 秒开启 AI，避免阻塞浏览器对 PWA manifest 的首屏评估
+        setTimeout(() => {
+            initAiWorker(); 
+            console.log("MECIS: AI 延时启动以优化 PWA 安装环境");
+        }, 1000);
         
         const currentFile = getFileName();
+        // 迁移旧版 LocalStorage 数据 (保持逻辑不丢失)
         const oldQA = localStorage.getItem(`QA_DATA_${currentFile}`);
         const oldQuick = localStorage.getItem(`QUICK_DATA_${currentFile}`);
         if (oldQA || oldQuick) {
@@ -137,11 +143,8 @@
         await refreshMemory();
         renderAll();
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(console.warn);
-        }
+        // 注意：HTML 头部已经注册了 sw.js，此处不再重复注册以防 Scope 冲突
     };
-
     async function refreshMemory() {
         qaData = await IO.getAll(STORE_QA);
         const quickRows = await IO.getAll(STORE_QUICK);
@@ -164,23 +167,27 @@
 
         let displayData = [];
         if (!term) {
+            // 无搜索时按点击量排序
             displayData = [...qaData].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10);
             if (displayData.length === 0 && qaData.length > 0) displayData = [...qaData].reverse().slice(0, 10);
         } else {
+            // 1. 传统模糊匹配引擎
             const fuzzyResults = qaData.filter(item => 
                 fuzzyMatch(item.question, term) || item.replies.some(r => fuzzyMatch(r, term))
             );
 
+            // 2. AI 语义引擎 (V4.0 增强)
             if (isAiReady) {
                 const queryVec = await getVector(term);
                 const semanticResults = qaData
-                    .filter(item => item.vector) 
+                    .filter(item => item.vector) // 仅对比已向量化的数据
                     .map(item => ({
                         ...item,
                         score: cosineSimilarity(queryVec, item.vector)
                     }))
-                    .filter(item => item.score > 0.65);
+                    .filter(item => item.score > 0.65); // 语义置信度阈值
 
+                // 合并去重并按得分排序
                 const combined = [...fuzzyResults, ...semanticResults];
                 displayData = Array.from(new Map(combined.map(i => [i.id, i])).values());
                 displayData.sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -211,9 +218,11 @@
 
         showToast("AI 语义分析中...");
         
+        // 生成语义特征向量 (V4.0)
         let vector = null;
         if (isAiReady) vector = await getVector(question);
 
+        // 处理图片
         let images = [];
         for (let i = 0; i < imgFiles.length; i++) {
             const file = imgFiles[i].files[0];
@@ -229,13 +238,14 @@
         await refreshMemory();
         showToast("已存入 AI 库");
         
+        // 重置表单
         document.getElementById('newQuestion').value = '';
         document.getElementById('replyInputs').innerHTML = `<div class="reply-input-item"><input type="text" class="reply-val" placeholder="回复话术 1"><button onclick="addReplyInput()" class="plus-btn">+</button></div>`;
         document.getElementById('imageInputs').innerHTML = `<div class="image-input-item"><input type="text" class="img-cat-val" placeholder="分类..."><input type="file" class="img-file-val" accept="image/*"><button onclick="addImageInput()" class="plus-btn">+</button></div>`;
-        renderAll(); renderManageLists();
+        renderAll(); 
+        if(typeof renderManageLists === 'function') renderManageLists();
     };
-
-    // --- 6. 核心功能补全 ---
+    // --- 6. 核心功能补全 (完全保留 V3.5 逻辑) ---
     window.fuzzyMatch = function(str, keyword) {
         if (!str || !keyword) return false;
         str = str.toLowerCase(); keyword = keyword.toLowerCase();
@@ -317,55 +327,60 @@
         const n = document.body.className === 'light-theme' ? 'dark-theme' : 'light-theme';
         document.body.className = n; localStorage.setItem(DB_KEY_THEME, n);
     };
+
     window.addReplyInput = () => {
         const d = document.createElement('div'); d.className = 'reply-input-item';
         d.innerHTML = `<input type="text" class="reply-val" placeholder="回复话术..."><button onclick="this.parentElement.remove()" class="plus-btn">-</button>`;
         document.getElementById('replyInputs').appendChild(d);
     };
+
     window.addImageInput = () => {
         const d = document.createElement('div'); d.className = 'image-input-item';
         d.innerHTML = `<input type="text" class="img-cat-val" placeholder="分类..."><input type="file" class="img-file-val" accept="image/*"><button type="button" onclick="this.parentElement.remove()" class="plus-btn">-</button>`;
         document.getElementById('imageInputs').appendChild(d);
     };
+
     window.toggleModal = (s) => {
         const m = document.getElementById('modalOverlay');
         if (m) { m.style.display = s ? 'flex' : 'none'; if(s) renderManageLists(); }
     };
+
     window.switchTab = (t) => {
         document.querySelectorAll('.panel, .modal-tabs button').forEach(el => el.classList.remove('active'));
         document.getElementById(`panel-${t}`)?.classList.add('active');
         document.getElementById(`tab-${t}`)?.classList.add('active');
     };
+
     window.showToast = (m) => {
         const t = document.createElement('div'); t.innerText = m;
         t.style = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:8px 20px;border-radius:20px;z-index:9999;font-size:14px;";
         document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
     };
+
     window.clearAllData = async () => {
         if(confirm("确定清空全库吗？")) { await IO.clear(STORE_QA); await IO.clear(STORE_QUICK); location.reload(); }
     };
+
     window.deleteQA = async (id) => { await IO.delete(STORE_QA, id); await refreshMemory(); renderManageLists(); renderAll(); };
+
     window.deleteQuick = async (index) => {
         const list = await IO.getAll(STORE_QUICK);
-        // 注意：由于是按反序渲染，此处删除逻辑需小心
-        const target = list[index];
-        if(target) {
-            const tx = db.transaction(STORE_QUICK, "readwrite");
-            const store = tx.objectStore(STORE_QUICK);
-            // 获取真正的 key 
-            const keys = await new Promise(res => {
-                const r = store.getAllKeys(); r.onsuccess = () => res(r.result);
-            });
-            await IO.delete(STORE_QUICK, keys[index]);
-            await refreshMemory(); renderManageLists(); renderAll();
-        }
+        const keys = await new Promise(res => {
+            const tx = db.transaction(STORE_QUICK, "readonly");
+            const r = tx.objectStore(STORE_QUICK).getAllKeys();
+            r.onsuccess = () => res(r.result);
+        });
+        await IO.delete(STORE_QUICK, keys[index]);
+        await refreshMemory(); renderManageLists(); renderAll();
     };
+
     window.exportData = async () => {
         const obj = { qaData, quickReplies };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
         const link = document.createElement('a'); link.href = dataStr; 
         link.download = `芒果备份_${getFileName().split('.')[0]}.json`; link.click();
     };
+
     window.importData = (event) => {
         const file = event.target.files[0]; if (!file) return;
         const r = new FileReader();
@@ -380,14 +395,17 @@
         };
         r.readAsText(file);
     };
+
     window.renderAll = () => {
         const c = document.getElementById('quickReplyList');
         if (c) c.innerHTML = quickReplies.map(t => `<div class="tag-item" onclick="copyText('${t}')">${t}</div>`).join('');
         renderMainList();
     };
+
     window.clearSearchInput = () => {
         const input = document.getElementById('searchInput');
         if(input) { input.value = ''; renderMainList(); }
     };
 
-})();
+})(); // 闭包结束
+
