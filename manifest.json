@@ -7,6 +7,7 @@
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#1a1a1a",
+  "scope": "./",
   "icons": [
     {
       "src": "ass/images/App_Logo_192.png",
@@ -21,14 +22,37 @@
       "purpose": "any"
     }
   ],
+  "screenshots": [
+    {
+      "src": "ass/images/screenshot_wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Mango Sense 桌面控制台"
+    },
+    {
+      "src": "ass/images/screenshot_narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mango Sense 移动端助手"
+    }
+  ],
   "shortcuts": [
     {
       "name": "开启配置中心",
       "url": "./index.html?action=settings",
-      "icons": [{ "src": "ass/images/web_Logo.png", "sizes": "300x300","purpose": "any" }]
+      "icons": [
+        { 
+          "src": "ass/images/web_Logo.png", 
+          "sizes": "300x300",
+          "purpose": "any" 
+        }
+      ]
     }
   ]
 }
+
 
 
 
