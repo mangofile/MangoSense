@@ -23,6 +23,13 @@
                     });
             });
         }
+    // 强制捕获安装信号
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e; 
+        console.log('✅ 2026 PWA 信号已捕获');
+        // 可选：在界面上显示一个自定义安装按钮
+    });
     </script>
 </head>
 <body class="light-theme"> <!-- 预留主题类名 -->
@@ -145,3 +152,4 @@
     <script type="module" src="./ass/js/MangoSense.js"></script>
 </body>
 </html>
+
