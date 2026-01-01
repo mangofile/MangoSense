@@ -2,7 +2,7 @@ const CACHE_NAME = 'mango-sense-v4-core';
 // 2026 核心缓存列表
 const ASSETS = [
     './',
-    './index.html',
+    'index.html',
     './ass/css/style.css',
     './ass/js/MangoSense.js',
     './ass/images/web_Logo.png',
@@ -21,3 +21,4 @@ self.addEventListener('fetch', (e) => {
         caches.match(e.request).then(res => res || fetch(e.request))
     );
 });
+
