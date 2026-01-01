@@ -78,7 +78,7 @@
         // 修正逻辑：只有在库完全为空且从未初始化过时，才注入默认值
         const isInitDone = localStorage.getItem(window.DB_KEY_INIT);
         if (window.quickReplies.length === 0 && !isInitDone) {
-            const defaultQuick = ['您好', '好的', '请稍后'];
+            const defaultQuick = ['您好'];
             for (let t of defaultQuick) await window.IO.put(window.STORE_QUICK, {text: t});
             window.quickReplies = defaultQuick;
             localStorage.setItem(window.DB_KEY_INIT, 'true'); 
@@ -423,5 +423,6 @@
     };
 
 })(); // 闭包结束
+
 
 
