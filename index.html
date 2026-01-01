@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>芒果智能客服话术助手</title>
-    <!-- 1. 确保清单路径正确 -->
+    <!-- 1. PWA 清单关联 -->
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="ass/images/web_Logo.png">
     <link rel="stylesheet" href="ass/css/style.css">
-    <!-- 2. 引导脚本：强制激活统一的 sw.js -->
+    
+    <!-- 2. MECIS V4.0 核心引导脚本 -->
     <script>
+        // 跨域隔离与 Service Worker 激活
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js', { scope: './' })
                     .then(reg => {
-                        // 2026 隔离环境检查：若未就绪则强制刷新
                         if (!window.crossOriginIsolated || !navigator.serviceWorker.controller) {
                             reg.update().then(() => {
                                 if (reg.active) window.location.reload();
@@ -23,16 +24,45 @@
                     });
             });
         }
-    // 强制捕获安装信号
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        window.deferredPrompt = e; 
-        console.log('✅ 2026 PWA 信号已捕获');
-        // 可选：在界面上显示一个自定义安装按钮
-    });
+
+        // PWA 安装信号捕获与按钮联动
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 2026 标准：阻止自动弹窗，交由用户点击触发
+            e.preventDefault();
+            window.deferredPrompt = e; 
+            console.log('✅ 2026 PWA 信号已捕获');
+            
+            // 显示安装按钮
+            const installBtn = document.getElementById('pwaInstallBtn');
+            if (installBtn) {
+                installBtn.classList.remove('hidden-element');
+                installBtn.style.display = 'inline-flex';
+            }
+        });
+
+        // 监听安装完成
+        window.addEventListener('appinstalled', () => {
+            window.deferredPrompt = null;
+            const installBtn = document.getElementById('pwaInstallBtn');
+            if (installBtn) installBtn.style.display = 'none';
+            console.log('🚀 MANGO SENSE 已成功安装到系统');
+        });
+
+        // 手动触发安装函数
+        async function triggerPwaInstall() {
+            const promptEvent = window.deferredPrompt;
+            if (!promptEvent) return;
+            // 弹出原生安装窗口
+            promptEvent.prompt();
+            const { outcome } = await promptEvent.userChoice;
+            console.log(`用户选择: ${outcome}`);
+            window.deferredPrompt = null;
+            const installBtn = document.getElementById('pwaInstallBtn');
+            if (installBtn) installBtn.style.display = 'none';
+        }
     </script>
 </head>
-<body class="light-theme"> <!-- 预留主题类名 -->
+<body class="light-theme">
     <header class="top-bar">
         <div class="logo-area">
             <img src="ass/images/web_Logo.png" alt="Logo" class="main-logo"> 
@@ -40,13 +70,20 @@
             <span class="version-tag">v4.0</span>
         </div>
         <div class="header-controls">
-            <!-- 预留深色模式切换按钮 -->
-           <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="切换主题">
-           <!-- 太阳图标 (浅色模式显示) -->
-           <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-           <!-- 月亮图标 (深色模式显示) -->
-           <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-           </button>
+            <!-- PWA 安装按钮：初始隐藏，信号捕获后显示 -->
+            <button id="pwaInstallBtn" class="settings-btn" onclick="triggerPwaInstall()" style="display:none; border-color: var(--accent-blue); color: var(--accent-blue);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; vertical-align:middle;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                下载应用
+            </button>
+
+            <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="切换主题">
+                <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
             <button class="settings-btn" onclick="toggleModal(true)">配置中心</button>
         </div>
     </header>
@@ -87,13 +124,11 @@
             </div>
 
             <div class="modal-body">
-                <!-- 话术编辑面板 (Q&A) -->
                 <div id="panel-qa" class="panel active">
                     <div class="add-form">
                         <div class="input-group">
                             <input type="text" id="newQuestion" placeholder="输入客户问题...">
                         </div>
-
                         <div class="input-group">
                             <div id="replyInputs">
                                 <div class="reply-input-item">
@@ -102,7 +137,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="input-group">
                             <div id="imageInputs">
                                 <div class="image-input-item">
@@ -113,21 +147,17 @@
                             </div>
                             <div id="imgPreviewArea" class="preview-info"></div>
                         </div>
-
                         <button onclick="saveNewQA()" class="save-btn">添加库</button>
                     </div>
-                    <!-- 管理列表搜索增强 - 极简图标版 -->
                     <div class="manage-search-wrapper">
                         <svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle>
                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                </svg>
                         <input type="text" id="manageSearchInput" placeholder="搜索已存话术..." oninput="renderManageLists()">
                     </div>
-
                     <div id="manageQaList" class="manage-list"></div>
                 </div>
 
-                <!-- 常用语编辑面板 -->
                 <div id="panel-quick" class="panel">
                     <div class="add-form">
                         <div class="input-group">
@@ -139,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- 数据管理底部栏 -->
             <div class="db-actions">
                 <button onclick="clearAllData()" class="action-btn delete-btn">清空全库</button>
                 <button onclick="exportData()" class="action-btn">导出备份</button>
@@ -149,7 +178,7 @@
         </div>
     </div>
 
+    <!-- 业务主脚本 -->
     <script type="module" src="./ass/js/MangoSense.js"></script>
 </body>
 </html>
-
