@@ -276,4 +276,24 @@ button[style*="danger-red"]:hover {
 /* 深色模式适配：如果 Logo 是黑色的，在深色模式下变白 */
 body.dark-theme .main-logo {
     filter: brightness(0) invert(1);
+
+}
+/* PWA 安装按钮动效 */
+#pwaInstallBtn {
+    transition: all 0.3s ease;
+    animation: fadeInSlide 0.5s ease-out;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#pwaInstallBtn:hover {
+    background-color: var(--accent-blue);
+    color: white !important;
+    transform: scale(1.05);
 }
