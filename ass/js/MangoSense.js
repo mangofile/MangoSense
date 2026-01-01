@@ -1,11 +1,12 @@
 /**
- * PROTOCOL_RECOVERY_KEY::MECIS_V4.0_FINAL
- * STATUS: GLOBAL_MOUNT_STABLE
+ * PROTOCOL_RECOVERY_KEY::MECIS_V4.0_FINAL_INTEGRATED
+ * STATUS: LOGIC_FIXED_STABLE
  * VERSION: V4.0-AI-READY
+ * 2026-PRODUCTION
  */
 
 (function() {
-    // --- 1. 动态物理隔离逻辑 (全局挂载确保调试可见) ---
+    // --- 1. 动态物理隔离逻辑 ---
     window.getFileName = () => {
         const path = window.location.pathname;
         return path.substring(path.lastIndexOf('/') + 1) || 'index.html';
@@ -21,6 +22,7 @@
     window.STORE_QA = "QA_COLLECTION";
     window.STORE_QUICK = "QUICK_REPLIES";
     window.DB_KEY_THEME = 'USER_THEME_PREFERENCE';
+    window.DB_KEY_INIT = 'MECIS_QUICK_INIT_DONE'; // 常用语初始化标记
 
     window.db = null;
     window.qaData = []; 
@@ -67,7 +69,48 @@
         }
     };
 
-    // --- 3. AI 核心：Web Worker 交互 (路径锁定) ---
+    // --- 3. 内存刷新逻辑 (修复清空后自动反弹问题) ---
+    window.refreshMemory = async function() {
+        window.qaData = await window.IO.getAll(window.STORE_QA);
+        const quickRows = await window.IO.getAll(window.STORE_QUICK);
+        window.quickReplies = quickRows.map(r => typeof r === 'string' ? r : r.text);
+        
+        // 修正逻辑：只有在库完全为空且从未初始化过时，才注入默认值
+        const isInitDone = localStorage.getItem(window.DB_KEY_INIT);
+        if (window.quickReplies.length === 0 && !isInitDone) {
+            const defaultQuick = ['您好', '好的', '请稍后'];
+            for (let t of defaultQuick) await window.IO.put(window.STORE_QUICK, {text: t});
+            window.quickReplies = defaultQuick;
+            localStorage.setItem(window.DB_KEY_INIT, 'true'); 
+        }
+    };
+
+    // --- 4. 核心启动逻辑 (PWA 兼容与 AI 延迟启动) ---
+    window.onload = async () => {
+        console.log("MECIS V4.0: 正在构建环境...");
+        try {
+            await window.initDB();
+            await window.refreshMemory();
+            window.renderAll(); 
+
+            const savedTheme = localStorage.getItem(window.DB_KEY_THEME) || 'light-theme';
+            document.body.className = savedTheme;
+
+            // 注册 PWA 离线
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').catch(console.warn);
+            }
+
+            // 延迟启动 AI 引擎，确保 UI 线程优先处理 PWA 安装信号
+            setTimeout(() => {
+                window.initAiWorker();
+            }, 1200);
+        } catch (err) {
+            console.error("启动关键错误:", err);
+            window.renderAll(); 
+        }
+    };
+    // --- 3. AI 核心：Web Worker 交互 ---
     window.initAiWorker = function() {
         const workerUrl = new URL('./MangoSense.Worker.js', import.meta.url).href;
         try {
@@ -84,46 +127,31 @@
         } catch (error) {
             console.error("AI Worker 启动失败:", error);
         }
-    }
-
-    // --- 4. 核心启动逻辑 (渲染优先) ---
-    window.onload = async () => {
-        console.log("MECIS V4.0: 正在构建环境...");
-        try {
-            await window.initDB();
-            await window.refreshMemory();
-            window.renderAll(); // 立即尝试渲染
-
-            // 启动主题
-            const savedTheme = localStorage.getItem(window.DB_KEY_THEME) || 'light-theme';
-            document.body.className = savedTheme;
-
-            // 延迟启动 AI 避免阻塞 PWA 评估
-            setTimeout(() => {
-                window.initAiWorker();
-            }, 1200);
-
-            // 注册 PWA 离线
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(console.warn);
-            }
-        } catch (err) {
-            console.error("启动关键错误:", err);
-            window.renderAll(); 
-        }
-    };
-    window.refreshMemory = async function() {
-        window.qaData = await window.IO.getAll(window.STORE_QA);
-        const quickRows = await window.IO.getAll(window.STORE_QUICK);
-        window.quickReplies = quickRows.map(r => typeof r === 'string' ? r : r.text);
-        if (window.quickReplies.length === 0) {
-            const defaultQuick = ['您好', '好的', '请稍后'];
-            for (let t of defaultQuick) await window.IO.put(window.STORE_QUICK, {text: t});
-            window.quickReplies = defaultQuick;
-        }
     };
 
-    // --- 5. 渲染与搜索引擎 (V4.0 增强型) ---
+    window.getVector = async function(text) {
+        if (!window.isAiReady) return null;
+        return new Promise(res => {
+            const handler = (e) => {
+                if (e.data.type === 'VECTOR' && e.data.originalText === text) {
+                    window.aiWorker.removeEventListener('message', handler);
+                    res(e.data.vector);
+                }
+            };
+            window.aiWorker.addEventListener('message', handler);
+            window.aiWorker.postMessage({ type: 'EMBED', text });
+        });
+    };
+
+    window.cosineSimilarity = function(v1, v2) {
+        if (!v1 || !v2) return 0;
+        const dot = v1.reduce((s, c, i) => s + c * v2[i], 0);
+        const nA = Math.sqrt(v1.reduce((s, c) => s + c * c, 0));
+        const nB = Math.sqrt(v2.reduce((s, c) => s + c * c, 0));
+        return (nA === 0 || nB === 0) ? 0 : dot / (nA * nB);
+    };
+
+    // --- 5. 渲染与搜索引擎 (2026 增强型) ---
     window.renderMainList = async function() {
         const searchInput = document.getElementById('searchInput');
         const term = searchInput?.value.trim() || "";
@@ -134,7 +162,6 @@
 
         let displayData = [];
         if (!term) {
-            // 无搜索时按热度排序
             displayData = [...window.qaData].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10);
             if (displayData.length === 0 && window.qaData.length > 0) displayData = [...window.qaData].reverse().slice(0, 10);
         } else {
@@ -171,29 +198,7 @@
                 </span>
                 <div class="replies-box">${item.replies.map(r => `<div class="reply-option" onclick="window.copyText('${r}', ${item.id})">${r}</div>`).join('')}</div>
                 ${item.images && item.images.length > 0 ? window.renderImageSection(item.images) : ''}
-            </div>`).join('') : `<div style="text-align:center; padding:40px; color:#666;">暂无匹配话术，请在配置中心添加</div>`;
-    };
-
-    window.getVector = async function(text) {
-        if (!window.isAiReady) return null;
-        return new Promise(res => {
-            const handler = (e) => {
-                if (e.data.type === 'VECTOR' && e.data.originalText === text) {
-                    window.aiWorker.removeEventListener('message', handler);
-                    res(e.data.vector);
-                }
-            };
-            window.aiWorker.addEventListener('message', handler);
-            window.aiWorker.postMessage({ type: 'EMBED', text });
-        });
-    };
-
-    window.cosineSimilarity = function(v1, v2) {
-        if (!v1 || !v2) return 0;
-        const dot = v1.reduce((s, c, i) => s + c * v2[i], 0);
-        const nA = Math.sqrt(v1.reduce((s, c) => s + c * c, 0));
-        const nB = Math.sqrt(v2.reduce((s, c) => s + c * c, 0));
-        return (nA === 0 || nB === 0) ? 0 : dot / (nA * nB);
+            </div>`).join('') : `<div style="text-align:center; padding:40px; color:#666;">暂无匹配话术，请在配置中心添加数据</div>`;
     };
 
     window.saveNewQA = async function() {
@@ -211,10 +216,10 @@
 
         let images = [];
         for (let i = 0; i < imgFiles.length; i++) {
-            const file = imgFiles[i].files[0];
-            if (file) {
+            const file = imgFiles[i].files;
+            if (file && file[0]) {
                 const base = await new Promise(res => {
-                    const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file);
+                    const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file[0]);
                 });
                 images.push({ category: imgCats[i].value || "默认", url: base });
             }
@@ -224,13 +229,14 @@
         await window.refreshMemory();
         window.showToast("已存入 AI 库");
         
+        // 重置表单
         document.getElementById('newQuestion').value = '';
         document.getElementById('replyInputs').innerHTML = `<div class="reply-input-item"><input type="text" class="reply-val" placeholder="回复话术 1"><button onclick="window.addReplyInput()" class="plus-btn">+</button></div>`;
         document.getElementById('imageInputs').innerHTML = `<div class="image-input-item"><input type="text" class="img-cat-val" placeholder="分类..."><input type="file" class="img-file-val" accept="image/*"><button onclick="window.addImageInput()" class="plus-btn">+</button></div>`;
         window.renderAll(); 
         window.renderManageLists();
     };
-    // --- 6. 核心功能补全 (完全保留 V3.5 逻辑，支持 2026 隔离环境) ---
+    // --- 6. 核心功能补全 (2026 稳定版) ---
     window.fuzzyMatch = function(str, keyword) {
         if (!str || !keyword) return false;
         str = str.toLowerCase(); keyword = keyword.toLowerCase();
@@ -255,7 +261,7 @@
                     if (!document.getElementById('searchInput').value.trim()) window.renderMainList(); 
                 }
             }
-        } catch (err) { window.showToast("复制失败，请检查浏览器权限"); }
+        } catch (err) { window.showToast("复制失败"); }
     };
 
     window.copyImage = async (u) => {
@@ -263,8 +269,8 @@
             const res = await fetch(u); 
             const b = await res.blob();
             await navigator.clipboard.write([new ClipboardItem({ [b.type]: b })]);
-            window.showToast("图片已复制到剪贴板");
-        } catch (e) { window.showToast("图片复制失败"); }
+            window.showToast("图片已复制");
+        } catch (e) { window.showToast("复制失败"); }
     };
 
     window.renderImageSection = function(images) {
@@ -278,12 +284,12 @@
                 <div class="image-group">
                     <span class="group-label">${cat}-图片集:</span>
                     <div class="img-grid">
-                        ${groups[cat].map(url => `<img src="${url}" onclick="window.copyImage('${url}')" title="点击复制图片">`).join('')}
+                        ${groups[cat].map(url => `<img src="${url}" onclick="window.copyImage('${url}')">`).join('')}
                     </div>
                 </div>`).join('') + `</div>`;
     };
 
-    // --- 7. 管理界面逻辑 ---
+    // --- 7. 管理界面逻辑 (修正删除与清空漏洞) ---
     window.renderManageLists = () => {
         const mTerm = document.getElementById('manageSearchInput')?.value.trim().toLowerCase() || "";
         const qaContainer = document.getElementById('manageQaList');
@@ -293,23 +299,54 @@
             const filteredQa = window.qaData.filter(item => 
                 !mTerm || item.question.toLowerCase().includes(mTerm) || item.replies.some(r => r.toLowerCase().includes(mTerm))
             ).reverse();
-
             qaContainer.innerHTML = filteredQa.map(item => `
                 <div class="manage-item">
                     <div style="display:flex; align-items:center; overflow:hidden;">
                         ${(item.images?.length > 0) ? '<span style="margin-right:8px;">🖼️</span>' : ''}
-                        <span style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${item.question}</span>
+                        <span>${item.question}</span>
                     </div>
                     <span class="del-btn" onclick="window.deleteQA(${item.id})">删除</span>
                 </div>`).join('');
         }
         if (quickContainer) {
+            // 确保渲染顺序与数据库 Key 顺序一致
             quickContainer.innerHTML = [...window.quickReplies].reverse().map((t, i) => `
-                <div class="manage-item"><span>${t}</span><span class="del-btn" onclick="window.deleteQuick(${window.quickReplies.length - 1 - i})">删除</span></div>
+                <div class="manage-item"><span>${t}</span><span class="del-btn" onclick="window.deleteQuick(${i})">删除</span></div>
             `).join('');
         }
     };
 
+    // 修正：支持删除最后一个常用语，并防止 refreshMemory 自动填充
+    window.deleteQuick = async (index) => {
+        const tx = window.db.transaction(window.STORE_QUICK, "readonly");
+        const store = tx.objectStore(window.STORE_QUICK);
+        const keys = await new Promise(res => {
+            const r = store.getAllKeys(); r.onsuccess = () => res(r.result);
+        });
+        
+        // 由于界面是反序渲染的，需要反转 Key 列表来匹配 index
+        const targetKey = keys.reverse()[index];
+        if (targetKey !== undefined) {
+            await window.IO.delete(window.STORE_QUICK, targetKey);
+            // 标记已由用户操作过，即便为空也不再自动填充默认值
+            localStorage.setItem(window.DB_KEY_INIT, 'true');
+            await window.refreshMemory();
+            window.renderManageLists();
+            window.renderAll();
+        }
+    };
+
+    window.clearAllData = async () => {
+        if(confirm("确定清空全库吗？")) { 
+            await window.IO.clear(window.STORE_QA); 
+            await window.IO.clear(window.STORE_QUICK); 
+            // 清除标记，允许下次访问时重新生成默认语
+            localStorage.removeItem(window.DB_KEY_INIT);
+            location.reload(); 
+        }
+    };
+
+    // 其他 UI 交互函数
     window.addReplyInput = () => {
         const d = document.createElement('div'); d.className = 'reply-input-item';
         d.innerHTML = `<input type="text" class="reply-val" placeholder="回复话术..."><button onclick="this.parentElement.remove()" class="plus-btn">-</button>`;
@@ -335,36 +372,12 @@
 
     window.showToast = (m) => {
         const t = document.createElement('div'); t.innerText = m;
+        t.className = 'mecis-toast'; // 建议在 CSS 中统一样式
         t.style = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:8px 20px;border-radius:20px;z-index:9999;font-size:14px;";
         document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
     };
 
-    window.clearAllData = async () => {
-        if(confirm("确定清空全库吗？此操作不可撤销！")) { 
-            await window.IO.clear(window.STORE_QA); 
-            await window.IO.clear(window.STORE_QUICK); 
-            location.reload(); 
-        }
-    };
-
-    window.deleteQA = async (id) => { 
-        await window.IO.delete(window.STORE_QA, id); 
-        await window.refreshMemory(); 
-        window.renderManageLists(); 
-        window.renderAll(); 
-    };
-
-    window.deleteQuick = async (index) => {
-        const tx = window.db.transaction(window.STORE_QUICK, "readonly");
-        const store = tx.objectStore(window.STORE_QUICK);
-        const keys = await new Promise(res => {
-            const r = store.getAllKeys(); r.onsuccess = () => res(r.result);
-        });
-        if (keys[index] !== undefined) {
-            await window.IO.delete(window.STORE_QUICK, keys[index]);
-            await window.refreshMemory(); window.renderManageLists(); window.renderAll();
-        }
-    };
+    window.deleteQA = async (id) => { await window.IO.delete(window.STORE_QA, id); await window.refreshMemory(); window.renderManageLists(); window.renderAll(); };
 
     window.exportData = async () => {
         const obj = { qaData: window.qaData, quickReplies: window.quickReplies };
@@ -385,8 +398,9 @@
                 await window.IO.clear(window.STORE_QUICK);
                 for (let item of (d.qaData || [])) await window.IO.put(window.STORE_QA, item);
                 for (let t of (d.quickReplies || [])) await window.IO.put(window.STORE_QUICK, {text: t});
+                localStorage.setItem(window.DB_KEY_INIT, 'true');
                 location.reload();
-            } catch(err) { alert("导入失败，文件格式错误"); }
+            } catch(err) { alert("导入失败"); }
         };
         r.readAsText(file);
     };
