@@ -252,7 +252,7 @@
     window.copyText = async (t, id = null) => {
         try {
             await navigator.clipboard.writeText(t);
-            window.showToast("已复制话术");
+            window.showToast("已复制");
             if (id) {
                 const it = window.qaData.find(i => i.id === id);
                 if (it) { 
@@ -423,6 +423,7 @@
     };
 
 })(); // 闭包结束
+
 
 
 
